@@ -27,7 +27,9 @@ df_ocm = pd.DataFrame(json.loads(ocm.text))
 # df_rdw = pd.DataFrame(json.loads(rdw.text))
 
 # LAADPAALDATA
-#df_charging = pd.read_csv('laadpaaldata.csv')
+df_laadpalen = pd.read_csv('laadpaaldata.csv')
+
+
 
 # INWONERTAL
 inwonertal = pd.read_csv('inwonertal.csv',sep=';',usecols=['Naam_2','Inwonertal_54'])
@@ -218,9 +220,59 @@ with tab1:
         st.dataframe(top_dichtheid_inw.reset_index(drop=True), use_container_width=True)
 
 with tab2:
+    st.title("Laadpaal profiel")
+    st.write("Hoe ziet een gemiddelde bezetting van een laadpaal eruit?")
+    df_laadpalen['Started'] = pd.to_datetime(df_laadpalen['Started'], errors='coerce')
+
+    df_laadpalen['Hour'] = df_laadpalen['Started'].dt.hour
+
+    uurgebruik = df_laadpalen.groupby('Hour').size()
+
+    # Plot een histogram van het aantal laadbeurten per uur
+    plt.figure(figsize=(10, 6))
+    sns.barplot(uurgebruik, color='skyblue')
+    plt.title('Aantal laadbeurten per uur van de dag')
+    plt.xlabel('Uur van de dag')
+    plt.ylabel('Aantal laadbeurten')
+    plt.xticks(rotation=0)
+    plt.grid(axis='y', linestyle='--')
+    st.pyplot(plt)
+
+    st.write("Wat is het verschil tussen laden en bezetten van een laadpaal?")
+    df_laadpalen.loc[df_laadpalen['ChargeTime']<0, 'ChargeTime']=np.nan
+    df_laadpalen.loc[df_laadpalen['ChargeTime']>10, 'ChargeTime']=np.nan
+    df_laadpalen.loc[df_laadpalen['ConnectedTime']>48, 'ConnectedTime']=np.nan
+    df_schoon = df_laadpalen.dropna(subset=['ChargeTime', 'ConnectedTime'])
+    plt.figure(figsize=(10,6))
+    sns.scatterplot(data=df_schoon, x='ConnectedTime', y='ChargeTime')
+    st.pyplot(plt)
+    
+
+    st.write("Hoe ziet het gemiddelde laadprofiel er uit?")
+    df_laadpalen['Started'] = pd.to_datetime(df_laadpalen['Started'], errors='coerce')
+    df_laadpalen['Hour'] = df_laadpalen['Started'].dt.hour
+
+    gemiddeld_verbruik_per_uur = df_laadpalen.groupby('Hour')['TotalEnergy'].mean()
+
+    plt.figure(figsize=(10, 6))
+    sns.lineplot(x=gemiddeld_verbruik_per_uur.index, y=gemiddeld_verbruik_per_uur.values, marker="o", color="red")
+    plt.title('Gemiddeld energieverbruik per uur')
+    plt.xlabel('Uur van de dag')
+    plt.ylabel('Gemiddeld verbruik (Wh)')
+    plt.grid(axis='y', linestyle='--')
+    plt.show()
+    st.pyplot(plt)
+
+    st.write("Wat is de verdeling in vermogens?")
+    plt.figure(figsize=(10, 6))
+    sns.histplot(df_laadpalen['MaxPower'], bins=100, kde=True)
+    plt.title('Verdeling van het maximale vermogen', fontsize=15)
+    plt.xlabel('Maximaal Vermogen (Watt)', fontsize=10)
+    plt.ylabel('Aantal laadbeurten', fontsize=10)
+    st.pyplot(plt)
+
     st.header("Laadprofiel")
-    st.image("https://static.streamlit.io/examples/dog.jpg", width=400, caption="Placeholder image for Laadprofiel")
-    st.write("Content for Laadprofiel tab goes here.")
+    
 
 with tab3:
     st.header("Verkoop Autos")
