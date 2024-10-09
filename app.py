@@ -221,80 +221,98 @@ with tab1:
 
 with tab2:
     st.title("Laadpaal data")
-    st.write("Hoe ziet een gemiddelde bezetting van een laadpaal eruit?")
+    st.subheader("Hoe ziet de gemiddelde bezetting van een laadpaal eruit?")
+
     df_laadpalen['Started'] = pd.to_datetime(df_laadpalen['Started'], errors='coerce')
+    df_laadpalen = df_laadpalen.dropna(subset=['Started']) 
+    #laadbeurten per uur
+    def plot_figuur1():
+        df_laadpalen['Hour'] = df_laadpalen['Started'].dt.hour
+        uurgebruik = df_laadpalen.groupby('Hour').size()
 
-    df_laadpalen['Hour'] = df_laadpalen['Started'].dt.hour
-
-    uurgebruik = df_laadpalen.groupby('Hour').size()
-
-    # Plot een histogram van het aantal laadbeurten per uur
-    plt.figure(figsize=(10, 6))
-    sns.barplot(uurgebruik, color='skyblue')
-    plt.title('Aantal laadbeurten per uur van de dag')
-    plt.xlabel('Uur van de dag', fontsize=10)
-    plt.ylabel('Aantal laadbeurten', fontsize=10)
-    plt.xticks(rotation=0)
-    plt.grid(axis='y', linestyle='--')
-    st.pyplot(plt)
-    st.write('Het is te zien dat rond 7 a.m. en rond 4 p.m. De meeste laadbeurten zijn. Dit is een logische uitkomst. Dit heeft te maken met het aankomen op werk en het aankomen thuis na werk.')
-
-    #Per seizoen wordt er ook nog gekeken hoeveel er geladen wordt. 
-    df_laadpalen['Maand'] = df_laadpalen['Started'].dt.month
-
-    def assign_season(month):
-        if month in [12, 1, 2]:
-            return 'Winter'
-        elif month in [3, 4, 5]:
-            return 'Lente'
-        elif month in [6, 7, 8]:
-            return 'Zomer'
-        else:
-            return 'Herfst'
-
-    df_laadpalen['Seizoen'] = df_laadpalen['Maand'].apply(assign_season)
-
-    season_usage = df_laadpalen.groupby('Seizoen').size()
-
-    plt.figure(figsize=(8, 5))
-    season_usage.plot(kind='bar', color='skyblue')
-    plt.title('Aantal laadbeurten per seizoen')
-    plt.xlabel('Seizoen')
-    plt.ylabel('Aantal laadbeurten')
-    plt.grid(axis='y', linestyle='--')
-    plt.show()
-    st.pyplot(plt)
+        # Plot een histogram van het aantal laadbeurten per uur
+        plt.figure(figsize=(10, 6))
+        sns.barplot(uurgebruik, color='skyblue')
+        plt.title('Aantal laadbeurten per uur van de dag')
+        plt.xlabel('Uur van de dag', fontsize=10)
+        plt.ylabel('Aantal laadbeurten', fontsize=10)
+        plt.xticks(rotation=0)
+        plt.grid(axis='y', linestyle='--')
+        st.pyplot(plt)
 
     #Laadbeurten per maand
-    df_laadpalen['Dag'] = df_laadpalen['Started'].dt.day
-    df_laadpalen['Maand'] = df_laadpalen['Started'].dt.month
+    def plot_figuur2():
+        df_laadpalen['Dag'] = df_laadpalen['Started'].dt.day
+        df_laadpalen['Maand'] = df_laadpalen['Started'].dt.month
 
-    keuze_maand = st.selectbox('Kies een maand om het laadprofiel van te weergeven', [ 'Januari', 'Februari', 'Maart', 'April', 'Mei', 'Juni',
-                'Juli', 'Augustus', 'September', 'Oktober', 'November', 'December'])
-    nummer_maand = { 'Januari': 1, 'Februari': 2, 'Maart': 3, 'April': 4, 'Mei': 5, 'Juni': 6,
-                'Juli': 7, 'Augustus': 8, 'September': 9, 'Oktober': 10, 'November': 11, 'December': 12}[keuze_maand]
-    df1 = df_laadpalen[df_laadpalen['Maand'] == nummer_maand]
-    plt.figure(figsize=(10, 6))
-    sns.histplot(df1, x='Dag', bins=31, color='skyblue')
-    plt.title(f'Laadbeurten in {keuze_maand}', fontsize=15)
-    plt.xlabel('Dag', fontsize=10)
-    plt.ylabel('Aantal laadbeurten', fontsize=10)
-    st.pyplot(plt)
+        keuze_maand = st.selectbox('Kies een maand om het laadprofiel van te weergeven', [ 'Januari', 'Februari', 'Maart', 'April', 'Mei', 'Juni',
+                    'Juli', 'Augustus', 'September', 'Oktober', 'November', 'December'])
+        nummer_maand = { 'Januari': 1, 'Februari': 2, 'Maart': 3, 'April': 4, 'Mei': 5, 'Juni': 6,
+                    'Juli': 7, 'Augustus': 8, 'September': 9, 'Oktober': 10, 'November': 11, 'December': 12}[keuze_maand]
+        df1 = df_laadpalen[df_laadpalen['Maand'] == nummer_maand]
+        plt.figure(figsize=(10, 6))
+        sns.histplot(df1, x='Dag', bins=31, color='skyblue')
+        plt.title(f'Laadbeurten in {keuze_maand}', fontsize=15)
+        plt.xlabel('Dag', fontsize=10)
+        plt.ylabel('Aantal laadbeurten', fontsize=10)
+        plt.grid(axis='y', linestyle='--')
+        st.pyplot(plt)        
+    
+    #Per seizoen wordt er ook nog gekeken hoeveel er geladen wordt. 
+    def plot_figuur3():
+        df_laadpalen['Maand'] = df_laadpalen['Started'].dt.month
 
-    st.write("Wat is het verschil tussen laden en bezetten van een laadpaal?")
+        def assign_season(month):
+            if month in [12, 1, 2]:
+                return 'Winter'
+            elif month in [3, 4, 5]:
+                return 'Lente'
+            elif month in [6, 7, 8]:
+                return 'Zomer'
+            else:
+                return 'Herfst'
+
+        df_laadpalen['Seizoen'] = df_laadpalen['Maand'].apply(assign_season)
+
+        season_usage = df_laadpalen.groupby('Seizoen').size()
+
+        plt.figure(figsize=(8, 5))
+        season_usage.plot(kind='bar', color='skyblue')
+        plt.title('Aantal laadbeurten per seizoen')
+        plt.xlabel('Seizoen')
+        plt.ylabel('Aantal laadbeurten')
+        plt.grid(axis='y', linestyle='--')
+        plt.show()
+        st.pyplot(plt)  
+
+    optie = st.selectbox('Welke figuur wil je weergeven?', 
+                      ['Laadbeurten per uur', 'Laadbeurten per maand', 'Laadbeurten per seizoen'])
+
+    if optie == 'Laadbeurten per uur':
+        plot_figuur1()
+    if optie == 'Laadbeurten per maand':
+        plot_figuur2()
+    if optie == 'Laadbeurten per seizoen':
+        plot_figuur3
+        
+    st.write('Het is te zien dat rond 7 a.m. en rond 4 p.m. De meeste laadbeurten zijn. Dit is een logische uitkomst. Dit heeft te maken met het aankomen op werk en het aankomen thuis na werk. Verder wordt er in de winter langer opgeladen dat in de zomer.')
+    
+    # Verschil tussen laden en bezetten
+    st.subheader("Wat is het verschil tussen laden en bezetten van een laadpaal?")
     df_laadpalen.loc[df_laadpalen['ChargeTime']<0, 'ChargeTime']=np.nan
     df_laadpalen.loc[df_laadpalen['ChargeTime']>10, 'ChargeTime']=np.nan
     df_laadpalen.loc[df_laadpalen['ConnectedTime']>48, 'ConnectedTime']=np.nan
     df_schoon = df_laadpalen.dropna(subset=['ChargeTime', 'ConnectedTime'])
     plt.figure(figsize=(10,6))
-    sns.scatterplot(data=df_schoon, x='ConnectedTime', y='ChargeTime', color='green')
+    sns.scatterplot(data=df_schoon, x='ConnectedTime', y='ChargeTime', color='skyblue')
     plt.title('Verschil tussen laden en bezetten')
     plt.xlabel('Aangesloten [uren]', fontsize=10)
     plt.ylabel('Opladen [uren]', fontsize=10)
+    plt.grid(axis='y', linestyle='--')
     st.pyplot(plt)
     
-
-    st.write("Hoe ziet het gemiddelde laadprofiel er uit?")
+    #Gemiddelde laadprofiel
+    st.subheader("Hoe ziet het gemiddelde laadprofiel er uit?")
     df_laadpalen['Started'] = pd.to_datetime(df_laadpalen['Started'], errors='coerce')
     df_laadpalen['Hour'] = df_laadpalen['Started'].dt.hour
 
@@ -309,13 +327,28 @@ with tab2:
     plt.show()
     st.pyplot(plt)
 
-    st.write("Wat is de verdeling in vermogens?")
+    st.write('Het hoogste verbruik is in de avond. Dat is ook de tijd dat de meeste autos opladen')
+
+    #verdeling van vermogens
+    st.subheader("Wat is de verdeling in vermogens?")
+
+    min_waarde=df_laadpalen['MaxPower'].min()
+    max_waarde=df_laadpalen['MaxPower'].max()
+    x_min, x_max = st.slider('Selecteer het bereik van maximaal vermogen (Watt)', 
+                         min_value=min_waarde, max_value=max_waarde, 
+                         value=(min_waarde, max_waarde))
+
     plt.figure(figsize=(10, 6))
-    sns.histplot(df_laadpalen['MaxPower'], bins=100, kde=True, color='skyblue')
+    sns.histplot(df_laadpalen['MaxPower'], bins=100, color='skyblue')
+    plt.xlim(x_min, x_max)
     plt.title('Verdeling van het maximale vermogen', fontsize=15)
     plt.xlabel('Maximaal Vermogen [Watt]', fontsize=10)
     plt.ylabel('Aantal laadbeurten', fontsize=10)
     st.pyplot(plt)
+
+    st.write('De meeste laadbeurten vinden plaats met een vermogen tussen de 2000 en 5000 Watt.')
+
+    
 
     
 
