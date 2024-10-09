@@ -220,7 +220,7 @@ with tab1:
         st.dataframe(top_dichtheid_inw.reset_index(drop=True), use_container_width=True)
 
 with tab2:
-    st.title("Laadpaal profiel")
+    st.title("Laadpaal data")
     st.write("Hoe ziet een gemiddelde bezetting van een laadpaal eruit?")
     df_laadpalen['Started'] = pd.to_datetime(df_laadpalen['Started'], errors='coerce')
 
@@ -232,10 +232,53 @@ with tab2:
     plt.figure(figsize=(10, 6))
     sns.barplot(uurgebruik, color='skyblue')
     plt.title('Aantal laadbeurten per uur van de dag')
-    plt.xlabel('Uur van de dag')
-    plt.ylabel('Aantal laadbeurten')
+    plt.xlabel('Uur van de dag', fontsize=10)
+    plt.ylabel('Aantal laadbeurten', fontsize=10)
     plt.xticks(rotation=0)
     plt.grid(axis='y', linestyle='--')
+    st.pyplot(plt)
+    st.write('Het is te zien dat rond 7 a.m. en rond 4 p.m. De meeste laadbeurten zijn. Dit is een logische uitkomst. Dit heeft te maken met het aankomen op werk en het aankomen thuis na werk.')
+
+    #Per seizoen wordt er ook nog gekeken hoeveel er geladen wordt. 
+    df_laadpalen['Maand'] = df_laadpalen['Started'].dt.month
+
+    def assign_season(month):
+        if month in [12, 1, 2]:
+            return 'Winter'
+        elif month in [3, 4, 5]:
+            return 'Lente'
+        elif month in [6, 7, 8]:
+            return 'Zomer'
+        else:
+            return 'Herfst'
+
+    df_laadpalen['Seizoen'] = df_laadpalen['Maand'].apply(assign_season)
+
+    season_usage = df_laadpalen.groupby('Seizoen').size()
+
+    plt.figure(figsize=(8, 5))
+    season_usage.plot(kind='bar', color='skyblue')
+    plt.title('Aantal laadbeurten per seizoen')
+    plt.xlabel('Seizoen')
+    plt.ylabel('Aantal laadbeurten')
+    plt.grid(axis='y', linestyle='--')
+    plt.show()
+    st.pyplot(plt)
+
+    #Laadbeurten per maand
+    df_laadpalen['Dag'] = df_laadpalen['Started'].dt.day
+    df_laadpalen['Maand'] = df_laadpalen['Started'].dt.month
+
+    keuze_maand = st.selectbox('Kies een maand om het laadprofiel van te weergeven', [ 'Januari', 'Februari', 'Maart', 'April', 'Mei', 'Juni',
+                'Juli', 'Augustus', 'September', 'Oktober', 'November', 'December'])
+    nummer_maand = { 'Januari': 1, 'Februari': 2, 'Maart': 3, 'April': 4, 'Mei': 5, 'Juni': 6,
+                'Juli': 7, 'Augustus': 8, 'September': 9, 'Oktober': 10, 'November': 11, 'December': 12}[keuze_maand]
+    df1 = df_laadpalen[df_laadpalen['Maand'] == nummer_maand]
+    plt.figure(figsize=(10, 6))
+    sns.histplot(df1, x='Dag', bins=31, color='skyblue')
+    plt.title(f'Laadbeurten in {keuze_maand}', fontsize=15)
+    plt.xlabel('Dag', fontsize=10)
+    plt.ylabel('Aantal laadbeurten', fontsize=10)
     st.pyplot(plt)
 
     st.write("Wat is het verschil tussen laden en bezetten van een laadpaal?")
@@ -244,7 +287,10 @@ with tab2:
     df_laadpalen.loc[df_laadpalen['ConnectedTime']>48, 'ConnectedTime']=np.nan
     df_schoon = df_laadpalen.dropna(subset=['ChargeTime', 'ConnectedTime'])
     plt.figure(figsize=(10,6))
-    sns.scatterplot(data=df_schoon, x='ConnectedTime', y='ChargeTime')
+    sns.scatterplot(data=df_schoon, x='ConnectedTime', y='ChargeTime', color='green')
+    plt.title('Verschil tussen laden en bezetten')
+    plt.xlabel('Aangesloten [uren]', fontsize=10)
+    plt.ylabel('Opladen [uren]', fontsize=10)
     st.pyplot(plt)
     
 
@@ -255,23 +301,22 @@ with tab2:
     gemiddeld_verbruik_per_uur = df_laadpalen.groupby('Hour')['TotalEnergy'].mean()
 
     plt.figure(figsize=(10, 6))
-    sns.lineplot(x=gemiddeld_verbruik_per_uur.index, y=gemiddeld_verbruik_per_uur.values, marker="o", color="red")
-    plt.title('Gemiddeld energieverbruik per uur')
-    plt.xlabel('Uur van de dag')
-    plt.ylabel('Gemiddeld verbruik (Wh)')
+    sns.lineplot(x=gemiddeld_verbruik_per_uur.index, y=gemiddeld_verbruik_per_uur.values, marker="o", color="black")
+    plt.title('Gemiddeld energieverbruik per uur',fontsize=15)
+    plt.xlabel('Uur van de dag', fontsize=10)
+    plt.ylabel('Gemiddeld verbruik (Wh)', fontsize=10)
     plt.grid(axis='y', linestyle='--')
     plt.show()
     st.pyplot(plt)
 
     st.write("Wat is de verdeling in vermogens?")
     plt.figure(figsize=(10, 6))
-    sns.histplot(df_laadpalen['MaxPower'], bins=100, kde=True)
+    sns.histplot(df_laadpalen['MaxPower'], bins=100, kde=True, color='skyblue')
     plt.title('Verdeling van het maximale vermogen', fontsize=15)
-    plt.xlabel('Maximaal Vermogen (Watt)', fontsize=10)
+    plt.xlabel('Maximaal Vermogen [Watt]', fontsize=10)
     plt.ylabel('Aantal laadbeurten', fontsize=10)
     st.pyplot(plt)
 
-    st.header("Laadprofiel")
     
 
 with tab3:
