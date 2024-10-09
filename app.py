@@ -58,7 +58,7 @@ print(df_ocm.isnull().sum())
 #df_connectors = pd.json_normalize(df_connections[0])
 
 # GEMEENTE EN PRONVICIE DATA
-gemeenten = gpd.read_file('gemeenten2.geojson')
+gemeenten = gpd.read_file('gemeenten2.json')
 provincies = gpd.read_file('provincies.geojson')
 
 gemeenten.to_crs("EPSG:4326")
@@ -120,59 +120,110 @@ def create_map(use_log_scale, density_type):
     folium.LayerControl().add_to(m)
     return m
 
-# Streamlit app
-st.title('Charger Density Map')
+#############################################
+# STREAMLIT APP
+#############################################
+st.set_page_config(
+    page_title="EV Charger Dashboard",
+    layout="wide"
+)
 
-# Create two columns for the switches
-col1, col2 = st.columns(2)
+# Custom CSS to improve visual appeal
+st.markdown("""
+    <style>
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 24px;
+    }
+    .stTabs [data-baseweb="tab"] {
+        height: 50px;
+        white-space: pre-wrap;
+        background-color: #0e1117;
+        border-radius: 4px;
+        color: #fafafa;
+        font-size: 18px;
+        font-weight: bold;
+        padding: 0px 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .stTabs [aria-selected="true"] {
+        background-color: #262730;
+    }
+    </style>
+""", unsafe_allow_html=True)
 
-# Switch for log scale
-with col1:
-    if 'log_scale' not in st.session_state:
-        st.session_state.log_scale = False
-    use_log_scale = st.checkbox('Use Log Scale', value=st.session_state.log_scale)
-    if use_log_scale != st.session_state.log_scale:
-        st.session_state.log_scale = use_log_scale
+tab1, tab2, tab3 = st.tabs(["📊 Charger Analysis", "📈 Laadprofiel", "🚗 Verkoop Autos"])
 
-# Switch for density type
-with col2:
-    density_type = st.radio('Density Type', ['Dichtheid_Oppervlak', 'Dichtheid_Inwoners'])
+with tab1:
+    st.title('📊 EV Charger Density Analysis')
+    
+    # Create two columns for the map and controls
+    col_map, col_controls = st.columns([3, 1])
+    
+    with col_map:
+        st.subheader('Charger Density Map')
+        map = create_map(st.session_state.get('log_scale', False), st.session_state.get('density_type', 'Dichtheid_Oppervlak'))
+        folium_static(map, width=800, height=500)
+    
+    with col_controls:
+        st.subheader('Map Controls')
+        with st.expander("Adjust Map Settings", expanded=True):
+            use_log_scale = st.checkbox('Use Log Scale', value=st.session_state.get('log_scale', False))
+            density_type = st.radio('Density Type', ['Dichtheid_Oppervlak', 'Dichtheid_Inwoners'])
+            
+            if use_log_scale != st.session_state.get('log_scale'):
+                st.session_state.log_scale = use_log_scale
+            if density_type != st.session_state.get('density_type'):
+                st.session_state.density_type = density_type
+    
+    st.markdown("---")
+    
+    st.subheader('Gemeenten Ranking')
+    
+    # Add a toggle for top/bottom 5
+    col_toggle, col_display = st.columns([1, 2])
+    
+    with col_toggle:
+        show_top = st.button('Toggle Top/Bottom 5')
+        if show_top:
+            st.session_state.show_top = not st.session_state.get('show_top', True)
+    
+    with col_display:
+        ranking_text = "Top 5" if st.session_state.get('show_top', True) else "Bottom 5"
+        st.info(f"Currently showing: {ranking_text} Gemeenten")
+    
+    # Display rankings in three columns
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.markdown(f"### {ranking_text} by Number of Chargers")
+        aantal_sorted = gemeenten.sort_values(by='Aantal', ascending=not st.session_state.get('show_top', True))
+        top_aantal = aantal_sorted[['name', 'Aantal']].head()
+        top_aantal.columns = ['Gemeente', 'Number of Chargers']
+        st.dataframe(top_aantal.reset_index(drop=True), use_container_width=True)
+    
+    with col2:
+        st.markdown(f"### {ranking_text} by Charger Density (per km²)")
+        dichtheid_opp_sorted = gemeenten.sort_values(by='Dichtheid_Oppervlak', ascending=not st.session_state.get('show_top', True))
+        top_dichtheid_opp = dichtheid_opp_sorted[['name', 'Dichtheid_Oppervlak']].head()
+        top_dichtheid_opp.columns = ['Gemeente', 'Charger Density (per km²)']
+        st.dataframe(top_dichtheid_opp.reset_index(drop=True), use_container_width=True)
+    
+    with col3:
+        st.markdown(f"### {ranking_text} by Charger Density (per 1000 inhabitants)")
+        dichtheid_inw_sorted = gemeenten.sort_values(by='Dichtheid_Inwoners', ascending=not st.session_state.get('show_top', True))
+        top_dichtheid_inw = dichtheid_inw_sorted[['name', 'Dichtheid_Inwoners']].head()
+        top_dichtheid_inw.columns = ['Gemeente', 'Charger Density (per 1000 inhabitants)']
+        st.dataframe(top_dichtheid_inw.reset_index(drop=True), use_container_width=True)
 
-map = create_map(st.session_state.log_scale, density_type)
-folium_static(map)
+with tab2:
+    st.header("Laadprofiel")
+    st.image("https://static.streamlit.io/examples/dog.jpg", width=400, caption="Placeholder image for Laadprofiel")
+    st.write("Content for Laadprofiel tab goes here.")
 
-st.subheader('Gemeenten Ranking')
+with tab3:
+    st.header("Verkoop Autos")
+    st.image("https://static.streamlit.io/examples/owl.jpg", width=400, caption="Placeholder image for Verkoop Autos")
+    st.write("Content for Verkoop Autos tab goes here.")
 
-# Add a toggle for top/bottom 5
-if 'show_top' not in st.session_state:
-    st.session_state.show_top = True
-
-show_top = st.button('Toggle Top/Bottom 5')
-if show_top:
-    st.session_state.show_top = not st.session_state.show_top
-
-ranking_text = "Top 5" if st.session_state.show_top else "Bottom 5"
-st.write(f"Currently showing: {ranking_text} Gemeenten")
-
-col1, col2, col3 = st.columns(3)
-
-with col1:
-    st.write(f"{ranking_text} by Number of Chargers")
-    aantal_sorted = gemeenten.sort_values(by='Aantal', ascending=not st.session_state.show_top)
-    top_aantal = aantal_sorted[['name', 'Aantal']].head()
-    top_aantal.columns = ['Gemeente', 'Number of Chargers']
-    st.dataframe(top_aantal.reset_index(drop=True))
-
-with col2:
-    st.write(f"{ranking_text} by Charger Density (per km²)")
-    dichtheid_opp_sorted = gemeenten.sort_values(by='Dichtheid_Oppervlak', ascending=not st.session_state.show_top)
-    top_dichtheid_opp = dichtheid_opp_sorted[['name', 'Dichtheid_Oppervlak']].head()
-    top_dichtheid_opp.columns = ['Gemeente', 'Charger Density (per km²)']
-    st.dataframe(top_dichtheid_opp.reset_index(drop=True))
-
-with col3:
-    st.write(f"{ranking_text} by Charger Density (per 1000 inhabitants)")
-    dichtheid_inw_sorted = gemeenten.sort_values(by='Dichtheid_Inwoners', ascending=not st.session_state.show_top)
-    top_dichtheid_inw = dichtheid_inw_sorted[['name', 'Dichtheid_Inwoners']].head()
-    top_dichtheid_inw.columns = ['Gemeente', 'Charger Density (per 1000 inhabitants)']
-    st.dataframe(top_dichtheid_inw.reset_index(drop=True))
