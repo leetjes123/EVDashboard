@@ -99,7 +99,7 @@ def load_geo_data():
     # df_rdw = pd.DataFrame(json.loads(rdw.text))
 
     # LAADPAALDATA
-    #df_charging = pd.read_csv('laadpaaldata.csv')
+df_laadpalen = pd.read_csv('laadpaaldata.csv')
 
 
 
