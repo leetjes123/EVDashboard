@@ -11,6 +11,7 @@ from pprint import pprint
 import json
 import folium
 import matplotlib.pyplot as plt
+import calendar
 
 
 #######################################################
@@ -285,15 +286,30 @@ with tab2:
         plt.show()
         st.pyplot(plt)  
 
+    def plot_figuur4():
+        df_laadpalen['Maand van laden'] = df_laadpalen['Started'].dt.month
+        maand_label = [calendar.month_name[i] for i in range(1,13)]
+        plt.figure(figsize=(10, 6))
+        sns.histplot(df_laadpalen, x='Maand van laden',bins=12, color='skyblue')
+        plt.title('Aantal laadbeurten per maand over een heel jaar', fontsize=15)
+        plt.xlabel('Maand', fontsize=10)
+        plt.xticks(ticks=range(1,13), labels = maand_label, rotation=45, fontsize=10)
+        plt.ylabel('Aantal laadbeurten', fontsize=10)
+        plt.grid(axis='y', linestyle='--')
+        plt.show()
+        st.pyplot(plt)
+
     optie = st.selectbox('Welke figuur wil je weergeven?', 
-                      ['Laadbeurten per uur', 'Laadbeurten per maand', 'Laadbeurten per seizoen'])
+                      ['Laadbeurten per uur', 'Laadbeurten per maand', 'Laadbeurten per seizoen', 'Aantal laadbeurten per maand over een heel jaar'])
 
     if optie == 'Laadbeurten per uur':
         plot_figuur1()
     if optie == 'Laadbeurten per maand':
         plot_figuur2()
     if optie == 'Laadbeurten per seizoen':
-        plot_figuur3
+        plot_figuur3()
+    if optie == 'Aantal laadbeurten per maand over een heel jaar':
+        plot_figuur4()
         
     st.write('Het is te zien dat rond 7 a.m. en rond 4 p.m. De meeste laadbeurten zijn. Dit is een logische uitkomst. Dit heeft te maken met het aankomen op werk en het aankomen thuis na werk. Verder wordt er in de winter langer opgeladen dat in de zomer.')
     
@@ -303,8 +319,14 @@ with tab2:
     df_laadpalen.loc[df_laadpalen['ChargeTime']>10, 'ChargeTime']=np.nan
     df_laadpalen.loc[df_laadpalen['ConnectedTime']>48, 'ConnectedTime']=np.nan
     df_schoon = df_laadpalen.dropna(subset=['ChargeTime', 'ConnectedTime'])
+    met_reg = st.checkbox('Zet lineaire regressie aan', value=False)
+
     plt.figure(figsize=(10,6))
     sns.scatterplot(data=df_schoon, x='ConnectedTime', y='ChargeTime', color='skyblue')
+
+    if met_reg:
+        sns.regplot(data=df_schoon, x='ConnectedTime', y='ChargeTime', color='skyblue')
+
     plt.title('Verschil tussen laden en bezetten')
     plt.xlabel('Aangesloten [uren]', fontsize=10)
     plt.ylabel('Opladen [uren]', fontsize=10)
@@ -344,6 +366,7 @@ with tab2:
     plt.title('Verdeling van het maximale vermogen', fontsize=15)
     plt.xlabel('Maximaal Vermogen [Watt]', fontsize=10)
     plt.ylabel('Aantal laadbeurten', fontsize=10)
+    plt.grid(axis='y', linestyle='--')
     st.pyplot(plt)
 
     st.write('De meeste laadbeurten vinden plaats met een vermogen tussen de 2000 en 5000 Watt.')
