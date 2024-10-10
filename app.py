@@ -232,35 +232,53 @@ with tab2:
 
     def plot_figuur1():
         df_laadpalen['Hour'] = df_laadpalen['Started'].dt.hour
-        uurgebruik = df_laadpalen.groupby('Hour').size()
+        uurgebruik = df_laadpalen.groupby('Hour').size().reset_index(name='Aantal laadbeurten')
+        
+        fig = px.bar(uurgebruik, 
+                 x='Hour', 
+                 y='Aantal laadbeurten', 
+                 title='Aantal laadbeurten per uur van de dag',
+                 labels={'Hour': 'Uur van de dag', 'Aantal laadbeurten': 'Aantal laadbeurten'},
+                 color_continuous_scale=['skyblue'],
+                 opacity=0.7) 
 
-        # Plot een histogram van het aantal laadbeurten per uur
-        plt.figure(figsize=(10, 6))
-        sns.barplot(uurgebruik, color='skyblue')
-        plt.title('Aantal laadbeurten per uur van de dag')
-        plt.xlabel('Uur van de dag', fontsize=10)
-        plt.ylabel('Aantal laadbeurten', fontsize=10)
-        plt.xticks(rotation=0)
-        plt.grid(axis='y', linestyle='--')
-        st.pyplot(plt)
+        fig.update_layout(yaxis_title='Aantal laadbeurten',
+                      xaxis_title='Uur van de dag',
+                      xaxis=dict(tickmode='linear'), 
+                      yaxis=dict(showgrid=True, gridcolor='lightgray'),
+                      title_font_size=18,
+                      xaxis_title_font_size=15,
+                      yaxis_title_font_size=15)
+
+        st.plotly_chart(fig)
 
     #Laadbeurten per maand
     def plot_figuur2():
         df_laadpalen['Dag'] = df_laadpalen['Started'].dt.day
         df_laadpalen['Maand'] = df_laadpalen['Started'].dt.month
 
-        keuze_maand = st.selectbox('Kies een maand om het laadprofiel van te weergeven', [ 'Januari', 'Februari', 'Maart', 'April', 'Mei', 'Juni',
-                    'Juli', 'Augustus', 'September', 'Oktober', 'November', 'December'])
-        nummer_maand = { 'Januari': 1, 'Februari': 2, 'Maart': 3, 'April': 4, 'Mei': 5, 'Juni': 6,
-                    'Juli': 7, 'Augustus': 8, 'September': 9, 'Oktober': 10, 'November': 11, 'December': 12}[keuze_maand]
+        keuze_maand = st.selectbox('Kies een maand om het laadprofiel van te weergeven', 
+                            ['Januari', 'Februari', 'Maart', 'April', 'Mei', 'Juni',
+                             'Juli', 'Augustus', 'September', 'Oktober', 'November', 'December'])
+
+        nummer_maand = {'Januari': 1, 'Februari': 2, 'Maart': 3, 'April': 4, 'Mei': 5, 'Juni': 6, 'Juli': 7,
+                    'Augustus': 8, 'September': 9, 'Oktober': 10, 'November': 11, 'December': 12}[keuze_maand]
+
         df1 = df_laadpalen[df_laadpalen['Maand'] == nummer_maand]
-        plt.figure(figsize=(10, 6))
-        sns.histplot(df1, x='Dag', bins=31, color='skyblue')
-        plt.title(f'Laadbeurten in {keuze_maand}', fontsize=15)
-        plt.xlabel('Dag', fontsize=10)
-        plt.ylabel('Aantal laadbeurten', fontsize=10)
-        plt.grid(axis='y', linestyle='--')
-        st.pyplot(plt)        
+
+        fig = px.histogram(df1, x='Dag', 
+                   nbins=31,
+                   color_discrete_sequence=['skyblue'],
+                   title=f'Laadbeurten in {keuze_maand}',
+                   labels={'Dag': 'Dag', 'count': 'Aantal laadbeurten'},
+                   opacity=0.7)
+
+        fig.update_layout(yaxis=dict(showgrid=True, gridcolor='lightgray'),
+                        title_font_size=18,
+                        xaxis_title_font_size=15,
+                        yaxis_title_font_size=15)
+        st.plotly_chart(fig)
+               
     
     #Per seizoen wordt er ook nog gekeken hoeveel er geladen wordt. 
     def plot_figuur3():
@@ -277,19 +295,21 @@ with tab2:
                 return 'Herfst'
 
         df_laadpalen['Seizoen'] = df_laadpalen['Maand'].apply(assign_season)
+        season_usage = df_laadpalen.groupby('Seizoen').size().reset_index(name='Aantal laadbeurten')
 
-    season_usage = df_laadpalen.groupby('Seizoen').size().reset_index(name='Aantal laadbeurten')
-
-    fig = px.bar(season_usage, 
+        fig = px.bar(season_usage, 
                  x='Seizoen', 
                  y='Aantal laadbeurten', 
                  title='Aantal laadbeurten per seizoen',
                  labels={'Seizoen': 'Seizoen', 'Aantal laadbeurten': 'Aantal laadbeurten'},
-                 color='Seizoen',  
-                 color_discrete_sequence=px.colors.sequential.Sky)  
-
-    fig.update_layout(yaxis=dict(showgrid=True, gridcolor='lightgray'))
-    st.plotly_chart(fig)
+                 color='Seizoen',
+                 color_discrete_sequence=['skyblue'],
+                 opacity=0.7)  
+        fig.update_layout(yaxis=dict(showgrid=True, gridcolor='lightgray'),
+                        title_font_size=18,
+                        xaxis_title_font_size=15,
+                        yaxis_title_font_size=15)
+        st.plotly_chart(fig)
 
 
 
@@ -303,15 +323,14 @@ with tab2:
                    title='Aantal laadbeurten per maand over een heel jaar',
                    labels={'Maand van laden': 'Maand'},
                    color_discrete_sequence=['skyblue'],
-                   opacity=0.5)
-        fig.update_layout(
-                        xaxis_title='Maand',
+                   opacity=0.7)
+        fig.update_layout(xaxis_title='Maand',
                         yaxis_title='Aantal laadbeurten',
                         xaxis=dict(tickmode='array', tickvals=list(range(1, 13)), ticktext=maand_label),
+                        yaxis=dict(showgrid=True, gridcolor='lightgray'),
                         title_font_size=18,
                         xaxis_title_font_size=15,
                         yaxis_title_font_size=15)
-       
         st.plotly_chart(fig)
 
 
