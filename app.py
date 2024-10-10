@@ -258,7 +258,200 @@ with tab1:
         st.dataframe(top_dichtheid_inw.set_index('Name'))
 
 with tab2:
-    st.header("Charging Profile")
+    st.title("Laadpaal data")
+    st.subheader("Hoe ziet de gemiddelde bezetting van een laadpaal eruit?")
+
+    #4 figuren worden onder een selectbox gezet om te selecteren welke figuur er wordt weergeven. 
+
+    #laadbeurten per uur
+    df_laadpalen['Started'] = pd.to_datetime(df_laadpalen['Started'], errors='coerce')
+    df_laadpalen = df_laadpalen.dropna(subset=['Started'])
+
+    def plot_figuur1():
+        df_laadpalen['Hour'] = df_laadpalen['Started'].dt.hour
+        uurgebruik = df_laadpalen.groupby('Hour').size().reset_index(name='Aantal laadbeurten')
+        
+        fig = px.bar(uurgebruik, 
+                 x='Hour', 
+                 y='Aantal laadbeurten', 
+                 title='Aantal laadbeurten per uur van de dag',
+                 labels={'Hour': 'Uur van de dag', 'Aantal laadbeurten': 'Aantal laadbeurten'},
+                 color_continuous_scale=['skyblue'],
+                 opacity=0.7) 
+
+        fig.update_layout(yaxis_title='Aantal laadbeurten',
+                      xaxis_title='Uur van de dag',
+                      xaxis=dict(tickmode='linear'), 
+                      yaxis=dict(showgrid=True, gridcolor='lightgray'),
+                      title_font_size=18,
+                      xaxis_title_font_size=15,
+                      yaxis_title_font_size=15)
+
+        st.plotly_chart(fig)
+
+    #Laadbeurten per maand
+    def plot_figuur2():
+        df_laadpalen['Dag'] = df_laadpalen['Started'].dt.day
+        df_laadpalen['Maand'] = df_laadpalen['Started'].dt.month
+
+        keuze_maand = st.selectbox('Kies een maand om het laadprofiel van te weergeven', 
+                            ['Januari', 'Februari', 'Maart', 'April', 'Mei', 'Juni',
+                             'Juli', 'Augustus', 'September', 'Oktober', 'November', 'December'])
+
+        nummer_maand = {'Januari': 1, 'Februari': 2, 'Maart': 3, 'April': 4, 'Mei': 5, 'Juni': 6, 'Juli': 7,
+                    'Augustus': 8, 'September': 9, 'Oktober': 10, 'November': 11, 'December': 12}[keuze_maand]
+
+        df1 = df_laadpalen[df_laadpalen['Maand'] == nummer_maand]
+
+        fig = px.histogram(df1, x='Dag', 
+                   nbins=31,
+                   color_discrete_sequence=['skyblue'],
+                   title=f'Laadbeurten in {keuze_maand}',
+                   labels={'Dag': 'Dag', 'count': 'Aantal laadbeurten'},
+                   opacity=0.7)
+
+        fig.update_layout(yaxis=dict(showgrid=True, gridcolor='lightgray'),
+                        title_font_size=18,
+                        xaxis_title_font_size=15,
+                        yaxis_title_font_size=15)
+        st.plotly_chart(fig)
+               
+    
+    #Per seizoen wordt er ook nog gekeken hoeveel er geladen wordt. 
+    def plot_figuur3():
+        df_laadpalen['Maand'] = df_laadpalen['Started'].dt.month
+
+        def assign_season(month):
+            if month in [12, 1, 2]:
+                return 'Winter'
+            elif month in [3, 4, 5]:
+                return 'Lente'
+            elif month in [6, 7, 8]:
+                return 'Zomer'
+            else:
+                return 'Herfst'
+
+        df_laadpalen['Seizoen'] = df_laadpalen['Maand'].apply(assign_season)
+        season_usage = df_laadpalen.groupby('Seizoen').size().reset_index(name='Aantal laadbeurten')
+
+        fig = px.bar(season_usage, 
+                 x='Seizoen', 
+                 y='Aantal laadbeurten', 
+                 title='Aantal laadbeurten per seizoen',
+                 labels={'Seizoen': 'Seizoen', 'Aantal laadbeurten': 'Aantal laadbeurten'},
+                 color='Seizoen',
+                 color_discrete_sequence=['skyblue'],
+                 opacity=0.7)  
+        fig.update_layout(yaxis=dict(showgrid=True, gridcolor='lightgray'),
+                        title_font_size=18,
+                        xaxis_title_font_size=15,
+                        yaxis_title_font_size=15)
+        st.plotly_chart(fig)
+
+
+
+    #Voor een heel jaar 
+    def plot_figuur4():
+        df_laadpalen['Maand van laden'] = df_laadpalen['Started'].dt.month
+        maand_label = [calendar.month_name[i] for i in range(1, 13)]
+        
+        fig = px.histogram(df_laadpalen, x='Maand van laden', 
+                   nbins=12, 
+                   title='Aantal laadbeurten per maand over een heel jaar',
+                   labels={'Maand van laden': 'Maand'},
+                   color_discrete_sequence=['skyblue'],
+                   opacity=0.7)
+        fig.update_layout(xaxis_title='Maand',
+                        yaxis_title='Aantal laadbeurten',
+                        xaxis=dict(tickmode='array', tickvals=list(range(1, 13)), ticktext=maand_label),
+                        yaxis=dict(showgrid=True, gridcolor='lightgray'),
+                        title_font_size=18,
+                        xaxis_title_font_size=15,
+                        yaxis_title_font_size=15)
+        st.plotly_chart(fig)
+
+
+    optie = st.selectbox('Welke figuur wil je weergeven?', 
+                      ['Laadbeurten per uur', 'Laadbeurten per maand', 'Laadbeurten per seizoen', 'Aantal laadbeurten per maand over een heel jaar'])
+
+    if optie == 'Laadbeurten per uur':
+        plot_figuur1()
+    if optie == 'Laadbeurten per maand':
+        plot_figuur2()
+    if optie == 'Laadbeurten per seizoen':
+        plot_figuur3()
+    if optie == 'Aantal laadbeurten per maand over een heel jaar':
+        plot_figuur4()
+        
+    st.write('Het is te zien dat rond 7 a.m. en rond 4 p.m. De meeste laadbeurten zijn. Dit is een logische uitkomst. Dit heeft te maken met het aankomen op werk en het aankomen thuis na werk. Verder wordt er in de winter langer opgeladen dat in de zomer.')
+    
+    # Verschil tussen laden en bezetten
+    st.subheader("Wat is het verschil tussen laden en bezetten van een laadpaal?")
+    df_laadpalen.loc[df_laadpalen['ChargeTime']<0, 'ChargeTime']=np.nan
+    df_laadpalen.loc[df_laadpalen['ChargeTime']>10, 'ChargeTime']=np.nan
+    df_laadpalen.loc[df_laadpalen['ConnectedTime']>48, 'ConnectedTime']=np.nan
+    df_schoon = df_laadpalen.dropna(subset=['ChargeTime', 'ConnectedTime'])
+
+
+    fig = px.scatter(df_schoon, x='ConnectedTime', y='ChargeTime', 
+                 title='Relatie tussen aangesloten Tijd en oplaadtijd',
+                 labels={'ConnectedTime': 'Aangesloten [uren]', 'ChargeTime': 'Opladen [uren]'},
+                 color_discrete_sequence=['skyblue'],
+                 opacity=0.5)
+    fig.update_layout(
+                title_font_size=18,
+                xaxis_title_font_size=15,
+                yaxis_title_font_size=15)
+    
+    st.plotly_chart(fig)
+    
+    #Gemiddelde laadprofiel
+    st.subheader("Hoe ziet het gemiddelde laadprofiel er uit?")
+    import plotly.express as px
+
+    df_laadpalen['Started'] = pd.to_datetime(df_laadpalen['Started'], errors='coerce')
+    df_laadpalen['Hour'] = df_laadpalen['Started'].dt.hour
+
+    gemiddeld_verbruik_per_uur = df_laadpalen.groupby('Hour')['TotalEnergy'].mean().reset_index()
+
+    fig = px.line(gemiddeld_verbruik_per_uur, x='Hour', y='TotalEnergy', 
+              markers=True, title='Gemiddeld energieverbruik per uur',
+              labels={'Hour': 'Uur van de dag', 'TotalEnergy': 'Gemiddeld verbruik [Wh]'})
+
+    fig.update_traces(line=dict(color="skyblue"))
+    fig.update_layout(
+    title_font_size=18,
+    xaxis_title_font_size=15,
+    yaxis_title_font_size=15,
+    xaxis=dict(dtick=1), 
+    yaxis=dict(showgrid=True, gridcolor='lightgray'))
+
+    st.plotly_chart(fig)
+
+    st.write('Het hoogste verbruik is in de avond. Dat is de tijd dat de meeste autos normaal gesproken opladen')
+
+    #verdeling van vermogens
+    st.subheader("Wat is de verdeling in vermogens?")
+
+    min_waarde=df_laadpalen['MaxPower'].min()
+    max_waarde=df_laadpalen['MaxPower'].max()
+    x_min, x_max = st.slider('Selecteer het bereik van maximaal vermogen (Watt)', 
+                         min_value=min_waarde, max_value=max_waarde, 
+                         value=(min_waarde, max_waarde))
+
+    fig = px.histogram(df_laadpalen, x='MaxPower', nbins=100, color_discrete_sequence=['skyblue'])
+    fig.update_xaxes(range=[x_min, x_max])
+    fig.update_layout(
+    title='Verdeling van het maximale vermogen',
+    xaxis_title='Maximaal Vermogen [Watt]',
+    yaxis_title='Aantal laadbeurten',
+    title_font_size=18,
+    xaxis_title_font_size=15,
+    yaxis_title_font_size=15,)
+
+    st.plotly_chart(fig)
+
+    st.write('De meeste laadbeurten vinden plaats met een vermogen tussen de 2000 en 5000 Watt.')
 
 with tab3:
     st.header("Car Sales")
